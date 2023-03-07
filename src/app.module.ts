@@ -1,25 +1,32 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { configuration } from './config/configuration';
+import { DatabaseConfig } from './config/db.config';
+import { validationSchema } from './config/validation';
 
+const ENV = process.env.NODE_ENV;
 @Module({
   imports: [
-    ClientsModule.register([
-      {
-        name: 'MATH_SERVICE',
-        transport: Transport.RMQ,
-        options: {
-          urls: ['amqp://localhost:5672'],
-          queue: 'cats_queue',
-          queueOptions: {
-            durable: false,
-          },
-        },
-      },
-    ]),
+    ConfigModule.forRoot({
+      envFilePath: !ENV ? '.env' : `.env.${ENV}`,
+      isGlobal: true,
+      load: [configuration],
+      validationSchema,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useClass: DatabaseConfig,
+    }),
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [ConfigService],
+  exports: [TypeOrmModule],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private readonly configService: ConfigService) {
+    const dbConfig = this.configService.get('database');
+
+    console.log(`CONFIG SERVICE`, dbConfig);
+  }
+}
