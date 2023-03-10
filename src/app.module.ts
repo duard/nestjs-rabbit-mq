@@ -1,32 +1,12 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { configuration } from './config/configuration';
-import { DatabaseConfig } from './config/db.config';
-import { validationSchema } from './config/validation';
+import { ConfigModule } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
-const ENV = process.env.NODE_ENV;
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      envFilePath: !ENV ? '.env' : `.env.${ENV}`,
-      isGlobal: true,
-      load: [configuration],
-      validationSchema,
-    }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useClass: DatabaseConfig,
-    }),
-  ],
-  controllers: [],
-  providers: [ConfigService],
-  exports: [TypeOrmModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true })],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule {
-  constructor(private readonly configService: ConfigService) {
-    const dbConfig = this.configService.get('database');
-
-    console.log(`CONFIG SERVICE`, dbConfig);
-  }
-}
+export class AppModule {}
